@@ -1,0 +1,4 @@
+port = 10240
+header_magic = "0x53b"
+ssh_password = "0x53b"
+image_dir = "/data/kvm_img"

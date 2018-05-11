@@ -8,12 +8,13 @@ import (
 	"net"
 	"strings"
 	"unsafe"
-	// "reflect"
+
+	"github.com/dotSlashLu/agent-neo/lib"
 )
 
 const magic = 0x53b
 
-var registeredModules modules
+var config = &lib.Config{}
 
 type protoHeader struct {
 	Magic int32
@@ -27,14 +28,18 @@ type protoBody struct {
 }
 
 func main() {
-	registeredModules = registerModules()
+	configFile := "./etc/config.toml"
+	if err := lib.ParseConfig(configFile, config); err != nil {
+		panic(fmt.Sprintf("Error parsing config file: %s", err.Error()))
+	}
+	log.Printf("read config: %+v\n", config)
 	log.Printf("registered modules: %+v\n", registeredModules)
-	sock, err := net.Listen("tcp", ":18103")
+	sock, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 	defer sock.Close()
 	if err != nil {
 		panic(err.Error())
 	}
-	log.Println("listening on port 18103")
+	log.Println("listening on port ", config.Port)
 	for {
 		conn, err := sock.Accept()
 		if err != nil {
@@ -45,8 +50,6 @@ func main() {
 }
 
 func parseHeader(conn net.Conn) *protoHeader {
-	// python header proto test:
-	// import socket; import struct; sock = socket.socket(); sock.connect(("localhost", 18103)); d = struct.pack("<i", 0x53b); sock.send(d)
 	size := unsafe.Sizeof(protoHeader{})
 	buf := make([]byte, size, size)
 	n, err := conn.Read(buf)

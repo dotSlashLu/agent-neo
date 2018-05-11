@@ -1,5 +1,7 @@
 package module
 
-type Module interface {
+// import "github.com/dotSlashLu/agent-neo/lib"
+
+type CallableModule interface {
 	Call(fn string, params []byte) (string, error)
 }
