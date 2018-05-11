@@ -16,12 +16,12 @@ import (
    attach a volume backend to vm
    signature:
    struct {
-       UUID   [68]byte // vm uuid
+       UUID   [32]byte // vm uuid
        Name   [32]byte // random str
        Target [3]byte  // vdb? vdc?
        Slot   [4]byte  // 0x007++
    }
-   68s 32s 3s 4s
+   python struct fmt: 32s 32s 3s 4s
 
    This can be tested in the command line with
 
@@ -29,26 +29,22 @@ import (
 	   --target vde --persistent --driver qemu --subdriver qcow2 \
 	   --live --print-xml
 */
-func (m *Module) attach(params []byte) (string, error) {
-	type paramsT struct {
-		UUID   [68]byte // vm uuid
+func (m *Module) attach(recv []byte) ([]byte, error) {
+	type paramsProto struct {
+		UUID   [32]byte // vm uuid
 		Name   [32]byte // random str
 		Target [3]byte  // vdb? vdc?
 		Slot   [4]byte  // 0x007++
 	}
-	type resp struct {
-		Status string `json:"status"`
-	}
 
-	p := paramsT{}
-	err := binary.Read(bytes.NewReader(params), binary.LittleEndian, &p)
+	p := paramsProto{}
+	err := binary.Read(bytes.NewReader(recv), binary.LittleEndian, &p)
 	if err != nil {
 		fmt.Println("error parsing params", err.Error())
-		return "", err
+		return []byte{}, err
 	}
 	fmt.Println(p)
-	imgName := fmt.Sprintf("/data/kvm_img/%s/%s.qcow2", p.UUID, p.Name)
-	xmlStr := defineDevice(imgName, p.Target[:], p.Slot[:])
+	xmlStr := getDeviceXML(p.UUID[:], p.Name[:], p.Target[:])
 	conn, err := llib.Connect()
 	defer llib.ConnectClose(conn)
 	if err != nil {
@@ -62,27 +58,31 @@ func (m *Module) attach(params []byte) (string, error) {
 	if err != nil {
 		return respError(err)
 	}
+
+	type resp struct {
+		Status string `json:"status"`
+	}
 	ret, err := json.Marshal(resp{"ok"})
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
-	return string(ret), nil
+	return ret, nil
 }
 
-func defineDevice(imgName string, target []byte, slot []byte) string {
+func getDeviceXML(uuid []byte, fileName []byte, target []byte) string {
 	deviceXMLTemplate := `
         <disk type='file' device='disk'>
             <driver name='qemu' type='qcow2' cache='none'/>
-            <source file='{{.ImgName}}'/>
-            <target dev='{{.Target}}' bus='virtio'/>
+            <source file='{{.filePath}}'/>
+            <target dev='{{.target}}' bus='virtio'/>
         </disk>
     `
+	filePath := fmt.Sprintf("/data/kvm_img/%s/%s.qcow2", uuid, fileName)
 	var deviceXMLBuf bytes.Buffer
 	t := template.Must(template.New("device").Parse(deviceXMLTemplate))
 	templateVals := map[string]string{
-		"ImgName": imgName,
-		"Target":  string(bytes.Trim(target[:], "\x00")),
-		"Slot":    string(bytes.Trim(slot[:], "\x00")),
+		"filePath": filePath,
+		"target":  string(bytes.Trim(target[:], "\x00")),
 	}
 	writer := bufio.NewWriter(&deviceXMLBuf)
 	t.Execute(writer, templateVals)

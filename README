@@ -1,0 +1,9 @@
+An agent running on hosts to control virtual machines via libvirt API.
+
+This project, though functions normally and can be extended to be a full 
+fledged agent, is not meant be used directly without modifications for it:
+
+- Is just an agent, you have to implement the server part based on the binary 
+protocol
+- Uses binary protocol for rapid prototyping but not friendly for server 
+implementation

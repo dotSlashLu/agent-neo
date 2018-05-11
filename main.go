@@ -20,11 +20,11 @@ type protoHeader struct {
 	Magic int32
 }
 
+
 type protoBody struct {
-	FnNameLen uint32
-	ParamsLen uint32
-	FnName    string
-	Params    []byte
+	FnName 		string
+	ParamsLen 	uint32
+	Params 		[]byte
 }
 
 func main() {
@@ -71,35 +71,42 @@ func parseHeader(conn net.Conn) *protoHeader {
 	return &h
 }
 
+/*
+	struct {
+		FnName    [32]byte
+		ParamsLen uint32
+		Params    []byte
+	}
+	python struct fmt: 32si{x}s
+*/
 func parseBody(conn net.Conn) *protoBody {
-	buf := make([]byte, 8)
+	buf := make([]byte, 32)
 	if _, err := conn.Read(buf); err != nil {
 		panic(err.Error())
 	}
-	fnNameLen := binary.LittleEndian.Uint32(buf[:4])
-	paramLen := binary.LittleEndian.Uint32(buf[4:])
-	fmt.Printf("parsed fnNameLen: %v, paramLen: %v\n", fnNameLen, paramLen)
-
-	buf = make([]byte, fnNameLen, fnNameLen)
-	if _, err := conn.Read(buf); err != nil {
-		panic(err.Error())
-	}
-	fnName := string(buf)
+	fnName := string(bytes.Trim(buf, "\x00"))
 	fmt.Printf("parsed fnName: %v\n", fnName)
+
+	buf = make([]byte, 4)
+	if _, err := conn.Read(buf); err != nil {
+		panic(err.Error())
+	}
+	paramLen := binary.LittleEndian.Uint32(buf)
+	fmt.Printf("parsed paramLen: %v\n", paramLen)
 
 	paramBuf := make([]byte, paramLen)
 	if _, err := conn.Read(paramBuf); err != nil {
 		panic(err.Error())
 	}
 	fmt.Printf("params buff: %v\n", paramBuf)
-	return &protoBody{fnNameLen, paramLen, fnName, paramBuf}
+	return &protoBody{fnName, paramLen, paramBuf}
 }
 
-func call(fnFull string, params []byte) (string, error) {
+func call(fnFull string, params []byte) ([]byte, error) {
 	fnSlice := strings.Split(fnFull, ".")
 	modName := fnSlice[0]
 	fnName := fnSlice[1]
-	fmt.Println("mod", modName, "fn", fnName)
+	fmt.Println("mod", modName, "fn", fnName, "params", params)
 	mod := registeredModules[modName]
 	fmt.Printf("mod %T %+v\n", mod, mod)
 	return mod.Call(fnName, params)
@@ -117,8 +124,8 @@ func handleConn(conn net.Conn) {
 	header := parseHeader(conn)
 	fmt.Printf("parsed header %+v\n", header)
 	body := parseBody(conn)
-	fmt.Printf("parsed body %+v\n", body)
 	ret, _ := call(body.FnName, body.Params)
-	fmt.Printf("ret %v\n", ret)
+	fmt.Printf("ret %s\n", ret)
+	conn.Write(ret)
 	fmt.Println("handle over, byebye")
 }

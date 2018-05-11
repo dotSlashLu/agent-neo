@@ -17,18 +17,20 @@ func New(config *lib.Config) *Module {
 	return VolumeModule
 }
 
-func (m *Module) Call(fn string, params []byte) (string, error) {
+func (m *Module) Call(fn string, params []byte) ([]byte, error) {
 	switch fn {
 	case "create":
 		return m.create(params)
 	case "attach":
 		return m.attach(params)
+	case "detach":
+		return m.detach(params)
 	default:
 		panic("method not implemented")
 	}
 }
 
-func respError(e error) (string, error) {
+func respError(e error) ([]byte, error) {
 	type resp struct {
 		Status string `json:"status"`
 		Error  string `json:"error"`
@@ -37,5 +39,5 @@ func respError(e error) (string, error) {
 	if err != nil {
 		panic(err)
 	}
-	return string(str), nil
+	return str, nil
 }
