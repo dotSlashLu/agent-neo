@@ -27,17 +27,17 @@ type protoBody struct {
 }
 
 func main() {
-	configFile := "./etc/config.toml"
-	if err := lib.ParseConfig(configFile, config); err != nil {
+	flags := parseFlags()
+	if err := lib.ParseConfig(flags.configFile, config); err != nil {
 		panic(fmt.Sprintf("Error parsing config file: %s", err.Error()))
 	}
 	log.Printf("read config: %+v\n", config)
 	log.Printf("registered modules: %+v\n", registeredModules)
 	sock, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
-	defer sock.Close()
 	if err != nil {
 		panic(err.Error())
 	}
+	defer sock.Close()
 	log.Println("listening on port ", config.Port)
 	for {
 		conn, err := sock.Accept()
