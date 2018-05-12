@@ -1,9 +1,6 @@
-An agent running on hosts to control virtual machines via libvirt API.
+An agent running on hosts to control virtual machines remotely via libvirt API.
 
-This project, though functions normally and can be extended to be a full 
-fledged agent, is not meant be used directly without modifications for it:
-
-- Is just an agent, you have to implement the server part based on the binary 
-protocol
-- Uses binary protocol for rapid prototyping but not friendly for server 
-implementation
+A few things to notice before using:
+- It uses binary protocol for rapid prototyping but might not be very friendly
+to the implementation of the server
+- A demo server written in python is in the server_demo directory

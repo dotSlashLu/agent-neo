@@ -16,12 +16,12 @@ import (
    attach a volume backend to vm
    signature:
    struct {
-       UUID   [32]byte // vm uuid
+       UUID   [36]byte // vm uuid
        Name   [32]byte // random str
        Target [3]byte  // vdb? vdc?
        Slot   [4]byte  // 0x007++
    }
-   python struct fmt: 32s 32s 3s 4s
+   python struct fmt: 36s 32s 3s 4s
 
    This can be tested in the command line with
 
@@ -31,14 +31,14 @@ import (
 */
 func (m *Module) attach(recv []byte) ([]byte, error) {
 	type paramsProto struct {
-		UUID   [32]byte // vm uuid
+		UUID   [36]byte // vm uuid
 		Name   [32]byte // random str
 		Target [3]byte  // vdb? vdc?
 		Slot   [4]byte  // 0x007++
 	}
 
 	p := paramsProto{}
-	err := binary.Read(bytes.NewReader(recv), binary.LittleEndian, &p)
+	err := binary.Read(bytes.NewReader(recv), m.Config.Endianness_, &p)
 	if err != nil {
 		fmt.Println("error parsing params", err.Error())
 		return []byte{}, err
@@ -82,7 +82,7 @@ func getDeviceXML(uuid []byte, fileName []byte, target []byte) string {
 	t := template.Must(template.New("device").Parse(deviceXMLTemplate))
 	templateVals := map[string]string{
 		"filePath": filePath,
-		"target":  string(bytes.Trim(target[:], "\x00")),
+		"target":   string(bytes.Trim(target[:], "\x00")),
 	}
 	writer := bufio.NewWriter(&deviceXMLBuf)
 	t.Execute(writer, templateVals)

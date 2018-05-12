@@ -1,8 +1,8 @@
 package volume
 
 import (
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 
 	llib "github.com/dotSlashLu/agent-neo/lib/libvirt"
@@ -10,13 +10,13 @@ import (
 
 func (m *Module) detach(recv []byte) ([]byte, error) {
 	type paramProto struct {
-		UUID   [32]byte // vm uuid
+		UUID   [36]byte // vm uuid
 		Name   [32]byte // random str
 		Target [3]byte  // vdb? vdc?
 	}
 	params := paramProto{}
 	if err := binary.Read(bytes.NewReader(recv),
-		binary.LittleEndian,
+		m.Config.Endianness_,
 		&params); err != nil {
 		return respError(err)
 	}
@@ -34,7 +34,9 @@ func (m *Module) detach(recv []byte) ([]byte, error) {
 	}
 	dom.DetachDevice(xml)
 
-	resp := struct{Status string `json:"status"`}{"ok"}
+	resp := struct {
+		Status string `json:"status"`
+	}{"ok"}
 	ret, _ := json.Marshal(resp)
 	return ret, nil
 }

@@ -1,10 +1,10 @@
 package power
 
 import (
-	"fmt"
 	"bytes"
-	"encoding/json"
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 	"github.com/dotSlashLu/agent-neo/lib"
 	llib "github.com/dotSlashLu/agent-neo/lib/libvirt"
 )
@@ -27,8 +27,8 @@ func (m *Module) Call(fn string, params []byte) ([]byte, error) {
 
 func power(recv []byte) ([]byte, error) {
 	type paramsProto struct {
-		Op		[10]byte
-		UUID	llib.UUID
+		Op   [10]byte
+		UUID llib.UUID
 	}
 	params := paramsProto{}
 	binary.Read(bytes.NewReader(recv), binary.LittleEndian, &params)

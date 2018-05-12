@@ -20,11 +20,10 @@ type protoHeader struct {
 	Magic int32
 }
 
-
 type protoBody struct {
-	FnName 		string
-	ParamsLen 	uint32
-	Params 		[]byte
+	FnName    string
+	ParamsLen uint32
+	Params    []byte
 }
 
 func main() {
@@ -59,7 +58,7 @@ func parseHeader(conn net.Conn) *protoHeader {
 	}
 	r := bytes.NewReader(buf)
 	h := protoHeader{}
-	if err = binary.Read(r, binary.LittleEndian, &h); err != nil {
+	if err = binary.Read(r, config.Endianness_, &h); err != nil {
 		panic(fmt.Sprintf("Error parsing header: ", err.Error()))
 	} else {
 		fmt.Printf("parse successful %v\n", h)
@@ -91,7 +90,7 @@ func parseBody(conn net.Conn) *protoBody {
 	if _, err := conn.Read(buf); err != nil {
 		panic(err.Error())
 	}
-	paramLen := binary.LittleEndian.Uint32(buf)
+	paramLen := config.Endianness_.Uint32(buf)
 	fmt.Printf("parsed paramLen: %v\n", paramLen)
 
 	paramBuf := make([]byte, paramLen)
