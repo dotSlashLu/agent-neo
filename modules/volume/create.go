@@ -8,6 +8,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"github.com/dotSlashLu/agent-neo/lib"
 )
 
 type paramsT struct {
@@ -34,9 +35,9 @@ func (m *Module) create(params []byte) ([]byte, error) {
 		respError(err)
 	}
 	log.Println("parsed params", p)
-	imgName := fmt.Sprintf("/data/kvm_img/%s/%s.qcow2", p.UUID, p.Name)
 
-	// TODO fork/exec /usr/bin/qemu-img: invalid argument
+	imgName := fmt.Sprintf("/data/kvm_img/%s/%s.qcow2", lib.TrimBuf(p.UUID[:]),
+		lib.TrimBuf(p.Name[:]))
 	cmdStr := fmt.Sprintf("create -f qcow2 %s %dM", imgName, p.Size)
 	log.Println("cmd params", cmdStr)
 	cmd := exec.Command("qemu-img", strings.Split(cmdStr, " ")...)
@@ -47,7 +48,7 @@ func (m *Module) create(params []byte) ([]byte, error) {
 	if err != nil {
 		return respError(err)
 	}
-	fmt.Println(stdout.String(), stderr.String())
+	log.Println("stdout:", stdout.String(), "\nstderr:", stderr.String())
 
 	type resp struct {
 		Status string `json:"status"`

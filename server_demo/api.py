@@ -16,4 +16,4 @@ def call(host, fn_name, params):
     sock.send(params)
     ret = sock.recvfrom(1024)
     sock.close()
-
+    return ret
