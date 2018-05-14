@@ -14,7 +14,7 @@ type Module struct {
 	Config *lib.Config
 }
 
-var PowerModule = &Module{"volume", nil}
+var PowerModule = &Module{"power", nil}
 
 func New(config *lib.Config) *Module {
 	PowerModule.Config = config
@@ -22,56 +22,51 @@ func New(config *lib.Config) *Module {
 }
 
 func (m *Module) Call(fn string, params []byte) ([]byte, error) {
-	return power(params)
+	return m.power(params)
 }
 
-func power(recv []byte) ([]byte, error) {
-	type paramsProto struct {
+/*
+	proto
+		UUID [36]byte
 		Op   [10]byte
+	Op: suspend, resume
+*/
+func (m *Module) power(recv []byte) ([]byte, error) {
+	type paramsProto struct {
 		UUID llib.UUID
+		Op   [10]byte
 	}
 	params := paramsProto{}
-	binary.Read(bytes.NewReader(recv), binary.LittleEndian, &params)
+	binary.Read(bytes.NewReader(recv), m.Config.Endianness_, &params)
+	uuid := lib.TrimBuf(params.UUID[:])
+	op := lib.TrimBuf(params.Op[:])
 
 	conn, err := llib.Connect()
 	if err != nil {
-		return respError(err)
+		return lib.RespError(err)
 	}
 	defer func() {
 		conn.Close()
 	}()
-	dom, err := conn.LookupDomainByUUID(params.UUID[:])
+	dom, err := conn.LookupDomainByUUIDString(string(uuid))
 	if err != nil {
-		return respError(err)
+		return lib.RespError(err)
 	}
 
-	resp := struct {
-		Status string `json:"status"`
-	}{"ok"}
-	switch string(params.Op[:]) {
+	var opMethod func() error
+	switch string(op) {
 	case "suspend":
-		if err := dom.Suspend(); err != nil {
-			return respError(err)
-		}
+		opMethod = dom.Suspend
 	case "resume":
-		if err := dom.Resume(); err != nil {
-			return respError(err)
-		}
+		opMethod = dom.Resume
 	default:
-		panic(fmt.Sprintf("%s op not implemented", params.Op))
+		panic(fmt.Sprintf("%s op not implemented", op))
 	}
-	ret, _ := json.Marshal(resp)
-	return ret, nil
-}
-
-func respError(e error) ([]byte, error) {
-	type resp struct {
+	if err := opMethod(); err != nil {
+		return lib.RespError(err)
+	}
+	ret, _ := json.Marshal(struct {
 		Status string `json:"status"`
-		Error  string `json:"error"`
-	}
-	str, err := json.Marshal(resp{"error", e.Error()})
-	if err != nil {
-		panic(err)
-	}
-	return str, nil
+	}{"ok"})
+	return ret, nil
 }

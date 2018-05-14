@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/dotSlashLu/agent-neo/lib"
 	llib "github.com/dotSlashLu/agent-neo/lib/libvirt"
 	"github.com/libvirt/libvirt-go"
 )
@@ -19,9 +20,8 @@ import (
        UUID   [36]byte // vm uuid
        Name   [32]byte // random str
        Target [3]byte  // vdb? vdc?
-       Slot   [4]byte  // 0x007++
+       // Slot   [4]byte  // 0x007++
    }
-   python struct fmt: 36s 32s 3s 4s
 
    This can be tested in the command line with
 
@@ -31,10 +31,10 @@ import (
 */
 func (m *Module) attach(recv []byte) ([]byte, error) {
 	type paramsProto struct {
-		UUID   [36]byte // vm uuid
-		Name   [32]byte // random str
-		Target [3]byte  // vdb? vdc?
-		Slot   [4]byte  // 0x007++
+		UUID   llib.UUID // vm uuid
+		Name   [32]byte  // random str
+		Target [3]byte   // vdb? vdc?
+		// Slot   [4]byte  // 0x007++
 	}
 
 	p := paramsProto{}
@@ -44,13 +44,17 @@ func (m *Module) attach(recv []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 	fmt.Println(p)
-	xmlStr := getDeviceXML(p.UUID[:], p.Name[:], p.Target[:])
+	uuid := lib.TrimBuf(p.UUID[:])
+	name := lib.TrimBuf(p.Name[:])
+	target := lib.TrimBuf(p.Target[:])
+
+	xmlStr := getDeviceXML(uuid, name, target)
 	conn, err := llib.Connect()
-	defer llib.ConnectClose(conn)
 	if err != nil {
 		return respError(err)
 	}
-	dom, err := conn.LookupDomainByUUID(p.UUID[:])
+	defer conn.Close()
+	dom, err := conn.LookupDomainByUUIDString(string(uuid))
 	if err != nil {
 		return respError(err)
 	}

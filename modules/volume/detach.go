@@ -5,14 +5,15 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
+	"github.com/dotSlashLu/agent-neo/lib"
 	llib "github.com/dotSlashLu/agent-neo/lib/libvirt"
 )
 
 func (m *Module) detach(recv []byte) ([]byte, error) {
 	type paramProto struct {
-		UUID   [36]byte // vm uuid
-		Name   [32]byte // random str
-		Target [3]byte  // vdb? vdc?
+		UUID   llib.UUID // vm uuid
+		Name   [32]byte  // random str
+		Target [3]byte   // vdb? vdc?
 	}
 	params := paramProto{}
 	if err := binary.Read(bytes.NewReader(recv),
@@ -20,15 +21,19 @@ func (m *Module) detach(recv []byte) ([]byte, error) {
 		&params); err != nil {
 		return respError(err)
 	}
-	xml := getDeviceXML(params.UUID[:], params.Name[:], params.Target[:])
+	uuid := lib.TrimBuf(params.UUID[:])
+	name := lib.TrimBuf(params.Name[:])
+	target := lib.TrimBuf(params.Target[:])
+
+	xml := getDeviceXML(uuid, name, target)
 	conn, err := llib.Connect()
-	defer func() {
-		conn.Close()
-	}()
 	if err != nil {
 		return respError(err)
 	}
-	dom, err := conn.LookupDomainByUUID(params.UUID[:])
+	defer func() {
+		conn.Close()
+	}()
+	dom, err := conn.LookupDomainByUUIDString(string(uuid))
 	if err != nil {
 		return respError(err)
 	}

@@ -18,16 +18,20 @@ func New(config *lib.Config) *Module {
 }
 
 func (m *Module) Call(fn string, params []byte) ([]byte, error) {
+	var method func([]byte) ([]byte, error)
 	switch fn {
 	case "create":
-		return m.create(params)
+		method = m.create
 	case "attach":
-		return m.attach(params)
+		method = m.attach
 	case "detach":
-		return m.detach(params)
+		method = m.detach
+	case "delete":
+		method = m.delete
 	default:
 		panic("method not implemented")
 	}
+	return method(params)
 }
 
 func respError(e error) ([]byte, error) {

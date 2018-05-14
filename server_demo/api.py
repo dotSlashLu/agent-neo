@@ -11,7 +11,7 @@ def call(host, fn_name, params):
     params = params.serialize()
     header = header_proto(fn_name=fn_name, param_len=len(params))
     sock = socket.socket()
-    sock.connect(("localhost", 18103))
+    sock.connect((host, 18103))
     sock.send(header.serialize())
     sock.send(params)
     ret = sock.recvfrom(1024)
