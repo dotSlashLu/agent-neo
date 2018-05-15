@@ -1,7 +1,6 @@
 package misc
 
 import (
-	"encoding/json"
 	"github.com/dotSlashLu/agent-neo/lib"
 )
 
@@ -21,7 +20,7 @@ func (m *Module) Call(fn string, params []byte) ([]byte, error) {
 	var method func([]byte) ([]byte, error)
 	switch fn {
 	case "clone":
-		m.clone(params)
+		method = m.clone
 	default:
 		panic("method not implemented")
 	}

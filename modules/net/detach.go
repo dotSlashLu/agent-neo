@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/beevik/etree"
 	"github.com/dotSlashLu/agent-neo/lib"
 	llib "github.com/dotSlashLu/agent-neo/lib/libvirt"
 	"github.com/libvirt/libvirt-go"
 	"log"
-	"strings"
 )
 
 type netType int16
@@ -81,4 +79,3 @@ func (m *Module) detach(recv []byte) ([]byte, error) {
 	}
 	return lib.RespOk("")
 }
-
