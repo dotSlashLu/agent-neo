@@ -20,3 +20,15 @@ func RespError(e error) ([]byte, error) {
 	}
 	return str, nil
 }
+
+func RespOk(msg string) ([]byte, error) {
+	type resp struct {
+		Status  string `json: "status"`
+		Message string `json: "message"`
+	}
+	str, err := json.Marshal(resp{"ok", msg})
+	if err != nil {
+		panic(err)
+	}
+	return str, nil
+}

@@ -17,8 +17,6 @@ def volume_create(host, uuid, name, size):
         "size": size
     }
     params = params_proto(**params)
-    #  params = params_proto(uuid="b628579d-ae3d-41f0-887e-895204190c70",
-    #          name="new-disk1", target="vcd", size=1024)
     ret = call(host, "volume.create", params)
     print(ret)
 

@@ -25,12 +25,10 @@ func (m *Module) Call(fn string, params []byte) ([]byte, error) {
 	return m.power(params)
 }
 
-/*
-	proto
-		UUID [36]byte
-		Op   [10]byte
-	Op: suspend, resume
-*/
+// proto:
+// 	UUID [36]byte
+// 	Op   [10]byte
+// Op: suspend, resume
 func (m *Module) power(recv []byte) ([]byte, error) {
 	type paramsProto struct {
 		UUID llib.UUID

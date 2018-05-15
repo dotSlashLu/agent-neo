@@ -1,3 +1,4 @@
+// An agent running on hosts to let you control virtual machines remotely
 package main
 
 import (
@@ -51,8 +52,7 @@ func main() {
 func parseHeader(conn net.Conn) *protoHeader {
 	size := unsafe.Sizeof(protoHeader{})
 	buf := make([]byte, size, size)
-	n, err := conn.Read(buf)
-	fmt.Println("read ", n, buf)
+	_, err := conn.Read(buf)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading from conn: %v\n", err.Error()))
 	}
@@ -60,8 +60,6 @@ func parseHeader(conn net.Conn) *protoHeader {
 	h := protoHeader{}
 	if err = binary.Read(r, config.Endianness_, &h); err != nil {
 		panic(fmt.Sprintf("Error parsing header: ", err.Error()))
-	} else {
-		fmt.Printf("parse successful %v\n", h)
 	}
 	if h.Magic != magic {
 		panic(fmt.Sprintf("Bad format, magic not right, received %#x",
@@ -83,21 +81,20 @@ func parseBody(conn net.Conn) *protoBody {
 	if _, err := conn.Read(buf); err != nil {
 		panic(err.Error())
 	}
-	fnName := string(bytes.Trim(buf, "\x00"))
-	fmt.Printf("parsed fnName: %v\n", fnName)
+	fnName := string(lib.TrimBuf(buf))
 
 	buf = make([]byte, 4)
 	if _, err := conn.Read(buf); err != nil {
 		panic(err.Error())
 	}
 	paramLen := config.Endianness_.Uint32(buf)
-	fmt.Printf("parsed paramLen: %v\n", paramLen)
 
 	paramBuf := make([]byte, paramLen)
 	if _, err := conn.Read(paramBuf); err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("params buff: %v\n", paramBuf)
+	log.Printf("fn: %s, param len: %d, params: %v\n", fnName, paramLen,
+		paramBuf)
 	return &protoBody{fnName, paramLen, paramBuf}
 }
 
@@ -105,9 +102,7 @@ func call(fnFull string, params []byte) ([]byte, error) {
 	fnSlice := strings.Split(fnFull, ".")
 	modName := fnSlice[0]
 	fnName := fnSlice[1]
-	fmt.Println("mod", modName, "fn", fnName, "params", params)
 	mod := registeredModules[modName]
-	fmt.Printf("mod %T %+v\n", mod, mod)
 	return mod.Call(fnName, params)
 }
 
@@ -120,8 +115,7 @@ func handleConn(conn net.Conn) {
 		}
 	}()
 	defer conn.Close()
-	header := parseHeader(conn)
-	fmt.Printf("parsed header %+v\n", header)
+	parseHeader(conn)
 	body := parseBody(conn)
 	ret, _ := call(body.FnName, body.Params)
 	fmt.Printf("ret %s\n", ret)
