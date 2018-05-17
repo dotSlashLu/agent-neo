@@ -14,6 +14,8 @@ type Config struct {
 	Endianness_ binary.ByteOrder
 }
 
+var Cfg *Config
+
 func ParseConfig(filename string, c *Config) (err error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -28,5 +30,6 @@ func ParseConfig(filename string, c *Config) (err error) {
 	} else {
 		c.Endianness_ = binary.LittleEndian
 	}
+	Cfg = c
 	return
 }

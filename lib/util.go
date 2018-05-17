@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"log"
 	"bytes"
 	"encoding/json"
+	"net"
 )
 
 func TrimBuf(buf []byte) []byte {
@@ -31,4 +33,19 @@ func RespOk(msg string) ([]byte, error) {
 		panic(err)
 	}
 	return str, nil
+}
+
+// A wrapper around *netTCPConn.Write but ensures all bytes from buffer
+// are sent
+func SendAll(conn *net.TCPConn, buf []byte) error {
+	bufSize := len(buf)
+	wrote, err := conn.Write(buf)
+	if err != nil {
+		return err
+	}
+	if wrote == bufSize {
+		return nil
+	}
+	log.Printf("socket sent %d of %d retrying left\n", wrote, bufSize)
+	return SendAll(conn, buf[wrote:])
 }
