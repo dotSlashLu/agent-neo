@@ -8,20 +8,20 @@ import (
 	"log"
 	"net"
 	"strings"
-	"unsafe"
 
 	"github.com/dotSlashLu/agent-neo/lib"
 )
 
-const magic = 0x53b
+const Magic = 0x53b
 
 var config = &lib.Config{}
 
-type protoHeader struct {
+type ProtoHeader struct {
 	Magic int32
+	JobID [20]byte
 }
 
-type protoBody struct {
+type ProtoBody struct {
 	FnName    string
 	ParamsLen uint32
 	Params    []byte
@@ -49,19 +49,18 @@ func main() {
 	}
 }
 
-func parseHeader(conn net.Conn) *protoHeader {
-	size := unsafe.Sizeof(protoHeader{})
-	buf := make([]byte, size, size)
-	_, err := conn.Read(buf)
-	if err != nil {
+func parseHeader(conn net.Conn) *ProtoHeader {
+	headerLen := 4 + 20
+	buf := make([]byte, headerLen)
+	if _, err := conn.Read(buf); err != nil {
 		panic(fmt.Sprintf("Error reading from conn: %v\n", err.Error()))
 	}
 	r := bytes.NewReader(buf)
-	h := protoHeader{}
-	if err = binary.Read(r, config.Endianness_, &h); err != nil {
+	h := ProtoHeader{}
+	if err := binary.Read(r, config.Endianness_, &h); err != nil {
 		panic(fmt.Sprintf("Error parsing header: ", err.Error()))
 	}
-	if h.Magic != magic {
+	if h.Magic != Magic {
 		panic(fmt.Sprintf("Bad format, magic not right, received %#x",
 			h.Magic))
 	}
@@ -76,7 +75,7 @@ func parseHeader(conn net.Conn) *protoHeader {
 	}
 	python struct fmt: 32si{x}s
 */
-func parseBody(conn net.Conn) *protoBody {
+func parseBody(conn net.Conn) *ProtoBody {
 	buf := make([]byte, 32)
 	if _, err := conn.Read(buf); err != nil {
 		panic(err.Error())
@@ -95,7 +94,7 @@ func parseBody(conn net.Conn) *protoBody {
 	}
 	log.Printf("fn: %s, param len: %d, params: %v\n", fnName, paramLen,
 		paramBuf)
-	return &protoBody{fnName, paramLen, paramBuf}
+	return &ProtoBody{fnName, paramLen, paramBuf}
 }
 
 func call(fnFull string, params []byte) ([]byte, error) {
@@ -119,6 +118,6 @@ func handleConn(conn net.Conn) {
 	body := parseBody(conn)
 	ret, _ := call(body.FnName, body.Params)
 	fmt.Printf("ret %s\n", ret)
-	conn.Write(ret)
+	lib.SendAll(conn, ret)
 	fmt.Println("handle over, byebye")
 }

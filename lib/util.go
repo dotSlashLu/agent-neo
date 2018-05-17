@@ -1,9 +1,9 @@
 package lib
 
 import (
-	"log"
 	"bytes"
 	"encoding/json"
+	"log"
 	"net"
 )
 
@@ -35,9 +35,9 @@ func RespOk(msg string) ([]byte, error) {
 	return str, nil
 }
 
-// A wrapper around *netTCPConn.Write but ensures all bytes from buffer
+// A wrapper around net.Conn.Write but ensures all bytes from buffer
 // are sent
-func SendAll(conn *net.TCPConn, buf []byte) error {
+func SendAll(conn net.Conn, buf []byte) error {
 	bufSize := len(buf)
 	wrote, err := conn.Write(buf)
 	if err != nil {
