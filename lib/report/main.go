@@ -21,11 +21,6 @@ type reportHeader struct {
 	bodyLen    int32
 }
 
-type reportJobMsg struct {
-	jobID  [20]byte
-	msgLen int32
-	msg    []byte
-}
 
 // TODO
 // Now two buffers are made for both header and body which is repeating
@@ -45,43 +40,4 @@ func report(reportType ReportType, body []byte) error {
 	if err = lib.SendAll(conn, buf.Bytes()); err != nil {
 		return err
 	}
-}
-
-func ReportJob(jobID []byte, msg string) {
-	msg := reportJobMessage{
-		jobID,
-		len(msg),
-		[]byte(msg),
-	}
-	buf = new(bytes.Buffer)
-	if err := binary.Write(buf, lib.Cfg.Endianness_, msg); err != nil {
-		return err
-	}
-	return report(ReportTypeJob, buf.Bytes())
-}
-
-type VMStat int
-
-const (
-	VMStatRunning VMStat = iota
-	VMStatShutdown
-	VMStatPaused
-	VMStatCreating
-)
-
-type reportVMStatMessage struct {
-	uuid llib.UUID
-	stat VMStat
-}
-
-func ReportVMStat(uuid []byte, status VMStat) error {
-	msg := reportVMStatMessage{
-		uuid,
-		status,
-	}
-	buf = new(bytes.Buffer)
-	if err := binary.Write(buf, lib.Cfg.Endianness_, msg); err != nil {
-		return err
-	}
-	return report(ReportTypeVMStat, buf.Bytes())
 }
